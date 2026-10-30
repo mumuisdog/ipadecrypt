@@ -84,13 +84,17 @@ func Assemble(srcIPA string, dst io.Writer,
 func isExcludedIPAEntry(name string) bool {
 	s := strings.TrimSuffix(name, "/")
 
-	if s == "iTunesMetadata.plist" || s == "Payload/iTunesMetadata.plist" || s == "Payload/iTunesArtwork" {
-		return true
-	}
+if s == "iTunesMetadata.plist" {
+    return true
+}
 
-	if s == "Payload/META-INF" || strings.HasPrefix(s, "Payload/META-INF/") {
-		return true
-	}
+if s == "META-INF" || strings.HasPrefix(s, "META-INF/") {
+    return true
+}
+
+if s == "Payload/iTunesArtwork" {
+    return true
+}
 
 	parts := strings.Split(s, "/")
 
