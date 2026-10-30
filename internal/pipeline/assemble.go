@@ -27,7 +27,6 @@ func Assemble(srcIPA string, dst io.Writer,
 	if err != nil {
 		return fmt.Errorf("open src %s: %w", srcIPA, err)
 	}
-
 	defer src.Close()
 
 	zw := zip.NewWriter(dst)
@@ -54,7 +53,6 @@ func Assemble(srcIPA string, dst io.Writer,
 
 		return nil
 	}
-
 	if err := fillSubstitutes(write); err != nil {
 		zw.Close()
 		return err
@@ -79,22 +77,24 @@ func Assemble(srcIPA string, dst io.Writer,
 }
 
 // isExcludedIPAEntry mirrors the -x patterns the on-device run_zip
-// applies: SC_Info (FairPlay sinfs), Watch/WatchKitSupport2, dSYM,
-// BCSymbolMaps, Symbols, META-INF, iTunesMetadata.plist, iTunesArtwork.
+// applies, with metadata exclusions limited to the IPA root.
 func isExcludedIPAEntry(name string) bool {
 	s := strings.TrimSuffix(name, "/")
 
-if s == "iTunesMetadata.plist" {
-    return true
-}
+	// Remove iTunesMetadata.plist only from the IPA root.
+	if s == "iTunesMetadata.plist" {
+		return true
+	}
 
-if s == "META-INF" || strings.HasPrefix(s, "META-INF/") {
-    return true
-}
+	// Remove META-INF only from the IPA root, including its contents.
+	if s == "META-INF" || strings.HasPrefix(s, "META-INF/") {
+		return true
+	}
 
-if s == "Payload/iTunesArtwork" {
-    return true
-}
+	// Preserve the existing iTunesArtwork exclusion.
+	if s == "Payload/iTunesArtwork" {
+		return true
+	}
 
 	parts := strings.Split(s, "/")
 
