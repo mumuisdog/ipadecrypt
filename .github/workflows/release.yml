@@ -1,40 +1,50 @@
-name: Release
+
+name: Build and Release ipadecrypt
 
 on:
   push:
-    tags: ['v*']
+    branches:
+      - main
+    tags:
+      - "v*"
+
+  workflow_dispatch:
 
 permissions:
   contents: write
-  packages: read
 
 jobs:
-  release:
-    name: goreleaser
+  build:
+    name: Build ipadecrypt
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout source
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: fetch tags
-        run: git fetch --force --tags
-
-      - uses: actions/setup-go@v5
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version-file: go.mod
           cache: true
 
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run tests
+        run: go test ./...
 
-      - uses: goreleaser/goreleaser-action@v6
+      - name: Build and Release
+        uses: goreleaser/goreleaser-action@v6
         with:
-          distribution: goreleaser
-          version: '~> v2'
-          args: release --clean
+          version: latest
+          args: ${{ startsWith(github.ref, 'refs/tags/') && 'release --clean' || 'release --snapshot --clean' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ipadecrypt-${{ github.ref_name }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
